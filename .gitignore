@@ -24,6 +24,3 @@ dist-ssr
 *.sw?
 
 .yarn
-
-# Dockerfile for study
-Dockerfile
