@@ -11,6 +11,7 @@ import {
 import { NoteCard } from './components/NoteCard';
 import { NoteEditor } from './components/NoteEditor';
 import type { CreateNoteDto, Note } from './types/note';
+import { WorkoutWidget } from './components/WorkoutWidget';
 
 function App() {
   const [notes, setNotes] = useState<Note[]>([]);
@@ -157,6 +158,7 @@ function App() {
 
       {/* Main Dashboard Section */}
       <main className='mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8'>
+        <WorkoutWidget />
         {/* Statistics & Toolbar */}
         <section className='bg-card border-border flex flex-col justify-between gap-4 rounded-3xl border p-6 shadow-sm md:flex-row md:items-center'>
           <div className='space-y-1'>
