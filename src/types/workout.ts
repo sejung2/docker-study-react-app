@@ -35,3 +35,8 @@ export interface CreateWorkoutDto {
   workoutType: WorkoutType;
   bodyParts?: BodyPart[];
 }
+
+export interface UpdateWorkoutDto {
+  workoutType?: WorkoutType;
+  bodyParts?: BodyPart[];
+}

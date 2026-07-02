@@ -4,10 +4,9 @@ import { BODY_PART_LABELS, BodyPart, WorkoutType, type WorkoutCheck } from '../t
 
 const DAY_LABELS = ['월', '화', '수', '목', '금', '토', '일'];
 
-// 이번 주 월~일 날짜 문자열 7개 생성
 function getWeekDates(): string[] {
   const today = new Date();
-  const day = today.getDay(); // 일=0, 월=1 ...
+  const day = today.getDay();
   const monday = new Date(today);
   monday.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
 
@@ -31,6 +30,7 @@ function toDateString(d: Date): string {
 export const WorkoutWidget = () => {
   const [workouts, setWorkouts] = useState<WorkoutCheck[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingWorkout, setEditingWorkout] = useState<WorkoutCheck | null>(null);
   const [selectedType, setSelectedType] = useState<WorkoutType>(WorkoutType.GYM);
   const [selectedParts, setSelectedParts] = useState<BodyPart[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -45,6 +45,25 @@ export const WorkoutWidget = () => {
       .catch((err) => console.error('Error fetching workouts:', err));
   }, []);
 
+  const openCreateForm = () => {
+    setEditingWorkout(null);
+    setSelectedType(WorkoutType.GYM);
+    setSelectedParts([]);
+    setIsFormOpen(true);
+  };
+
+  const openEditForm = (workout: WorkoutCheck) => {
+    setEditingWorkout(workout);
+    setSelectedType(workout.workoutType);
+    setSelectedParts(workout.bodyParts);
+    setIsFormOpen(true);
+  };
+
+  const closeForm = () => {
+    setIsFormOpen(false);
+    setEditingWorkout(null);
+  };
+
   const togglePart = (part: BodyPart) => {
     setSelectedParts((prev) =>
       prev.includes(part) ? prev.filter((p) => p !== part) : [...prev, part],
@@ -54,16 +73,40 @@ export const WorkoutWidget = () => {
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
-      const created = await workoutApi.create({
-        workoutType: selectedType,
-        bodyParts: selectedType === WorkoutType.GYM ? selectedParts : undefined,
-      });
-      setWorkouts((prev) => [...prev, created]);
-      setIsFormOpen(false);
+      if (editingWorkout) {
+        const updated = await workoutApi.update(editingWorkout.id, {
+          workoutType: selectedType,
+          bodyParts: selectedType === WorkoutType.GYM ? selectedParts : [],
+        });
+        setWorkouts((prev) => prev.map((w) => (w.id === updated.id ? updated : w)));
+      } else {
+        const created = await workoutApi.create({
+          workoutType: selectedType,
+          bodyParts: selectedType === WorkoutType.GYM ? selectedParts : undefined,
+        });
+        setWorkouts((prev) => [...prev, created]);
+      }
+      closeForm();
       setSelectedParts([]);
     } catch (err) {
-      console.error('Error creating workout:', err);
-      alert('기록 저장에 실패했습니다. 백엔드 연결을 확인해주세요.');
+      console.error('Error saving workout:', err);
+      alert('기록 저장에 실패했습니다.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!editingWorkout) return;
+    if (!confirm('이 기록을 삭제할까요?')) return;
+    setIsSubmitting(true);
+    try {
+      await workoutApi.delete(editingWorkout.id);
+      setWorkouts((prev) => prev.filter((w) => w.id !== editingWorkout.id));
+      closeForm();
+    } catch (err) {
+      console.error('Error deleting workout:', err);
+      alert('삭제에 실패했습니다.');
     } finally {
       setIsSubmitting(false);
     }
@@ -74,17 +117,18 @@ export const WorkoutWidget = () => {
       <div className='flex items-center justify-between'>
         <div>
           <h2 className='text-xl font-extrabold text-gray-900 dark:text-white'>오운완 체크 🏋️</h2>
-          <p className='mt-1 text-sm text-gray-500 dark:text-gray-400'>이번 주 운동 기록</p>
+          <p className='mt-1 text-sm text-gray-500 dark:text-gray-400'>
+            이번 주 운동 기록 · 기록을 누르면 수정할 수 있어요
+          </p>
         </div>
         <button
-          onClick={() => setIsFormOpen((v) => !v)}
+          onClick={isFormOpen ? closeForm : openCreateForm}
           className='bg-primary text-primary-foreground shadow-primary/20 cursor-pointer rounded-xl px-5 py-2.5 text-sm font-bold shadow-md transition-all hover:opacity-95 active:scale-[0.98]'
         >
           {isFormOpen ? '닫기' : '오운완!'}
         </button>
       </div>
 
-      {/* 주간 동그라미 */}
       <div className='mt-6 grid grid-cols-7 gap-2'>
         {weekDates.map((date, i) => {
           const dayWorkouts = workouts.filter((w) => w.date === date);
@@ -100,17 +144,19 @@ export const WorkoutWidget = () => {
               >
                 {DAY_LABELS[i]}
               </span>
-              <div
+              <button
+                onClick={() => dayWorkouts.length > 0 && openEditForm(dayWorkouts[0])}
+                disabled={dayWorkouts.length === 0}
                 className={`flex h-11 w-11 items-center justify-center rounded-full border-2 text-base transition-all ${
                   done
-                    ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30'
+                    ? 'cursor-pointer border-emerald-500 bg-emerald-50 hover:scale-105 dark:bg-emerald-950/30'
                     : isToday
                       ? 'border-primary border-dashed'
                       : 'border-border'
                 }`}
               >
                 {dayWorkouts.map((w) => (w.workoutType === WorkoutType.GYM ? '🏋️' : '⚽')).join('')}
-              </div>
+              </button>
               <span className='h-4 text-[10px] text-gray-500 dark:text-gray-400'>
                 {dayWorkouts
                   .flatMap((w) => w.bodyParts)
@@ -122,9 +168,14 @@ export const WorkoutWidget = () => {
         })}
       </div>
 
-      {/* 기록 폼 */}
       {isFormOpen && (
         <div className='border-border mt-6 space-y-4 border-t pt-6'>
+          {editingWorkout && (
+            <p className='text-xs font-semibold text-gray-500 dark:text-gray-400'>
+              {editingWorkout.date} 기록 수정 중
+            </p>
+          )}
+
           <div className='flex gap-2'>
             {[
               { type: WorkoutType.GYM, label: '🏋️ 헬스' },
@@ -162,15 +213,26 @@ export const WorkoutWidget = () => {
             </div>
           )}
 
-          <button
-            onClick={handleSubmit}
-            disabled={
-              isSubmitting || (selectedType === WorkoutType.GYM && selectedParts.length === 0)
-            }
-            className='bg-primary text-primary-foreground w-full cursor-pointer rounded-xl py-2.5 text-sm font-bold transition-all hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-40'
-          >
-            {isSubmitting ? '저장 중...' : '기록하기'}
-          </button>
+          <div className='flex gap-2'>
+            <button
+              onClick={handleSubmit}
+              disabled={
+                isSubmitting || (selectedType === WorkoutType.GYM && selectedParts.length === 0)
+              }
+              className='bg-primary text-primary-foreground flex-1 cursor-pointer rounded-xl py-2.5 text-sm font-bold transition-all hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-40'
+            >
+              {isSubmitting ? '저장 중...' : editingWorkout ? '수정하기' : '기록하기'}
+            </button>
+            {editingWorkout && (
+              <button
+                onClick={handleDelete}
+                disabled={isSubmitting}
+                className='cursor-pointer rounded-xl border border-red-200 px-4 py-2.5 text-sm font-bold text-red-500 transition-all hover:bg-red-50 disabled:opacity-40 dark:border-red-900 dark:hover:bg-red-950/30'
+              >
+                삭제
+              </button>
+            )}
+          </div>
         </div>
       )}
     </section>
