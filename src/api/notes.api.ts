@@ -11,7 +11,7 @@ export const noteApi = {
     return response.json();
   },
 
-  async getById(id: number): Promise<Note> {
+  async getById(id: string): Promise<Note> {
     const response = await fetch(`${API_BASE_URL}/api/v1/notes/${id}`);
     if (!response.ok) {
       throw new Error('Failed to fetch note');
@@ -33,7 +33,7 @@ export const noteApi = {
     return response.json();
   },
 
-  async update(id: number, data: Partial<CreateNoteDto>): Promise<Note> {
+  async update(id: string, data: Partial<CreateNoteDto>): Promise<Note> {
     const response = await fetch(`${API_BASE_URL}/api/v1/notes/${id}`, {
       method: 'PATCH',
       headers: {
@@ -47,7 +47,7 @@ export const noteApi = {
     return response.json();
   },
 
-  async delete(id: number): Promise<void> {
+  async delete(id: string): Promise<void> {
     const response = await fetch(`${API_BASE_URL}/api/v1/notes/${id}`, {
       method: 'DELETE',
     });

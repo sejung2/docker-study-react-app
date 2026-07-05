@@ -24,7 +24,7 @@ export const BODY_PART_LABELS: Record<BodyPart, string> = {
 };
 
 export interface WorkoutCheck {
-  id: number;
+  id: string;
   workoutType: WorkoutType;
   bodyParts: BodyPart[];
   date: string;

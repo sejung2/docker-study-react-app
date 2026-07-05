@@ -5,7 +5,7 @@ import { CalendarIcon, EditIcon, TrashIcon } from './Icons';
 interface NoteCardProps {
   note: Note;
   onEdit: (note: Note) => void;
-  onDelete: (id: number) => void;
+  onDelete: (id: string) => void;
 }
 
 const COLOR_PRESETS = [
@@ -56,8 +56,16 @@ const COLOR_PRESETS = [
 ];
 
 export const NoteCard: React.FC<NoteCardProps> = ({ note, onEdit, onDelete }) => {
+  const hashId = (value: string) => {
+    let hash = 0;
+    for (let index = 0; index < value.length; index += 1) {
+      hash = (hash * 31 + value.charCodeAt(index)) >>> 0;
+    }
+    return hash;
+  };
+
   // Select color preset based on note ID
-  const preset = COLOR_PRESETS[note.id % COLOR_PRESETS.length];
+  const preset = COLOR_PRESETS[hashId(note.id) % COLOR_PRESETS.length];
 
   // Helper to format the creation date
   const formatDate = (dateStr: string) => {

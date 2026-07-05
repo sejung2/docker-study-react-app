@@ -27,7 +27,7 @@ RUN yarn build
 ###############################
 
 # 실제 이미지에 들어갈 베이스
-FROM nginx:alpine AS PRODUCTION
+FROM nginx:alpine AS production
 
 # 빌드 결과 가져오기(위에서 설정한 AS '~'와 동일해야 함)
 COPY --from=builder /app/dist /usr/share/nginx/html

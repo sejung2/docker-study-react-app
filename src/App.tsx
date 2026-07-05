@@ -107,7 +107,7 @@ function App() {
     setIsEditorOpen(false);
   };
 
-  const handleDeleteNote = async (id: number) => {
+  const handleDeleteNote = async (id: string) => {
     try {
       await noteApi.delete(id);
       setNotes((prev) => prev.filter((n) => n.id !== id));

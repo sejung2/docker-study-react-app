@@ -19,7 +19,7 @@ export const workoutApi = {
     return response.json();
   },
 
-  async update(id: number, data: UpdateWorkoutDto): Promise<WorkoutCheck> {
+  async update(id: string, data: UpdateWorkoutDto): Promise<WorkoutCheck> {
     const response = await fetch(`${API_BASE_URL}/api/v1/workouts/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -29,7 +29,7 @@ export const workoutApi = {
     return response.json();
   },
 
-  async delete(id: number): Promise<void> {
+  async delete(id: string): Promise<void> {
     const response = await fetch(`${API_BASE_URL}/api/v1/workouts/${id}`, {
       method: 'DELETE',
     });
